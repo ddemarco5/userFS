@@ -305,11 +305,21 @@ static int fs_truncate(const char * path, off_t offset) {
 	inode inode;
 	int i;
 	int fh;
-	int startblock;
+	int endblock;
 	DISK_LBA current_block;
-	printf("FSTRUNCATE CALLED!!!!!!!!!!!!!!!!!!!!!!!!!");
 	file_struct file;
 	assert(find_file(path, &file));
+	
+	read_inode(file.inode_number, &inode);
+	int blocknumber = (inode.file_size_bytes / BLOCK_SIZE_BYTES)+1;
+	printf("BLOCKNUMBER %i\n", blocknumber);
+	endblock = inode.no_blocks;
+	inode.no_blocks = blocknumber;
+	for(i=blocknumber; i<endblock; i++){
+		free_block(inode.blocks[i-1]);
+	}
+	write_inode(file.inode_number, &inode);
+	write_bitmap();
 	return 0;
 }
 
