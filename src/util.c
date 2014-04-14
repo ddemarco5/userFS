@@ -125,27 +125,31 @@ int u_fsck() {
 	int i;
 	
 	bool allocated_inodes[MAX_INODES];
-	bool allocated_blocks[sb.disk_size_blocks];
+	bool allocated_blocks[sb.num_free_blocks];
 	
 	//initialize the allocated_inodes array.
-	for(i=0; i<MAX_INODES; i++) allocated_inodes[i]=false;
+	for(i=0; i<MAX_INODES; i++){ 
+		allocated_inodes[i]=false;
+	}
 	//initialize the allocated_blocks array.
-	for(i=0; i<sb.disk_size_blocks; i++) allocated_blocks[i]=false;
+	for(i=0; i<sb.disk_size_blocks; i++){
+		allocated_blocks[i]=false;
+	}
 	
 	
-	inode inode_to_check;
-	for(i=0;root_dir.no_files;i++){
+	for(i=0;i<root_dir.no_files;i++){
+		inode inode_to_check;
 		read_inode(root_dir.u_file[i].inode_number, &inode_to_check);
 		if(inode_to_check.free){
 			fprintf(stderr, "File '%s' has lost it's inode. Deleting.\n'", root_dir.u_file[i].file_name);
 			dir_remove_file(root_dir.u_file[i]);
 		}
 		else{
-			printf("Inode found, saving blocks.\n");
 			allocated_inodes[root_dir.u_file[i].inode_number] = true;
 			int j;
-			for(j=0;j<inode_to_check.no_blocks; i++)
+			for(j=0;j<inode_to_check.no_blocks; j++){
 				allocated_blocks[inode_to_check.blocks[j]] = true;
+			}
 		}
 	}
 	//free up everything that isn't marked as allocated to remove orphaned blocks and inodes
@@ -155,15 +159,17 @@ int u_fsck() {
 			read_inode(i, &inodetofree);
 			inodetofree.free = true;
 			write_inode(i, &inodetofree);
+			fprintf(stderr, "Freed Inode %i\n", i);
 		}
-		else printf("Inode %i is allocated\n", i);
+		else fprintf(stderr, "Inode %i is allocated\n", i);
 	}
 	
-	for(i=0; i<sb.disk_size_blocks; i++){
-		if(!allocated_blocks[i]){
-			free_block(i);
+	for(i=0; i<sb.num_free_blocks; i++){
+		if(!allocated_blocks[i+8]){
+			free_block(i+8);
+			fprintf(stderr, "Freed Block %i\n", i+8);
 		}
-		else printf("Block %i is allocated\n", i);
+		else fprintf(stderr, "Block %i is allocated\n", i+8);
 	}
 	
 	write_bitmap();
@@ -184,6 +190,7 @@ int recover_file_system(char *file_name)
 	}
 
 	read_block(SUPERBLOCK_BLOCK, &sb, sizeof(superblock));
+	fprintf(stderr, "SUPERBLOCK: %i\n", sb.clean_shutdown);
 	read_block(BIT_MAP_BLOCK, bit_map, sizeof(BIT_FIELD)*BIT_MAP_SIZE);
 	read_block(DIRECTORY_BLOCK, &root_dir, sizeof(dir_struct));
 
@@ -194,7 +201,7 @@ int recover_file_system(char *file_name)
 	if (!sb.clean_shutdown)
 	{
 		/* Try to recover your file system */
-		fprintf(stderr, "u_fsck in progress......");
+		fprintf(stderr, "u_fsck in progress......\n");
 		if (u_fsck()){
 			fprintf(stderr, "Recovery complete\n");
 			return 1;
@@ -213,7 +220,6 @@ int u_clean_shutdown()
 {
 	/* write code for cleanly shutting down the file system
 	   return 1 for success, 0 for failure */
-	printf("CLEAN SHUTDOWN CALLED\n");
 	sb.num_free_blocks = u_quota();
 	
 	sb.clean_shutdown = 1;

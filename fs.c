@@ -201,7 +201,6 @@ static int fs_read(const char *path, char *buf, size_t size, off_t offset, struc
 	
 	
 	read_block_offset(inode.blocks[blockindex], buf, bytes_to_read, offset_in_block);
-	fprintf(stderr, "THIS IS BUF NOW:\n'%s'\n", buf);
 	fprintf(stderr, "THIS IS SIZE:\n%i\n", inode.file_size_bytes);
 	
 	read_bytes+=inode.file_size_bytes;
@@ -291,6 +290,7 @@ static int fs_write(const char * path, const char * buf, size_t buff_size, off_t
 	
 	//write blocks
 	allocate_block(freeblock);
+	write_dir();
 	write_bitmap();
 	
 	return bytes_to_write;
@@ -330,6 +330,7 @@ int fs_unlink(const char * path) {
 	file_struct file;
 	if (find_file(path, &file)) {
 		dir_remove_file(file);
+		write_dir();
 		return 0;
 	}
 	return -ENOENT;
@@ -455,7 +456,8 @@ int main(int argc, char **argv)
 	recover_file_system(disk);
 	//We are not clean
 	sb.clean_shutdown = 0;
-	write(virtual_disk, &sb, sizeof(superblock));
+	write_block(SUPERBLOCK_BLOCK, &sb, sizeof(superblock));
+	sync();
 	
 	if (!disable_crash) {
 		init_crasher();
@@ -463,6 +465,7 @@ int main(int argc, char **argv)
 	
 	ret = fuse_main(fuse_argc, fuse_argv, &fs_oper, NULL);
 	//We are unmounted. clean shutdown
+	fprintf(stderr, "Clean shutdown\n");
 	u_clean_shutdown();
 	
 	free(fuse_argv);

@@ -78,6 +78,7 @@ void dir_remove_file(file_struct file) {
 	//free file
 	for(i=0; i<MAX_FILES_PER_DIRECTORY; i++){
 		if(root_dir.u_file[i].inode_number == file.inode_number){
+			root_dir.no_files--;
 			root_dir.u_file[i].free = true;
 		}
 	}
@@ -87,7 +88,7 @@ void dir_remove_file(file_struct file) {
 void dir_rename_file(const char * old, const char * new) {
 	int i;
 	for(i=0; i<MAX_FILES_PER_DIRECTORY; i++){
-		if(strcmp(root_dir.u_file[i].file_name, old))
+		if(strcmp(root_dir.u_file[i].file_name, old)==0)
 			strcpy(root_dir.u_file[i].file_name, new);
 	}
 }

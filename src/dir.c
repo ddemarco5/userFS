@@ -31,6 +31,7 @@ void dir_allocate_file(int inode, const char * name) {
 			root_dir.u_file[i].inode_number = inode;
 			strcpy(root_dir.u_file[i].file_name, name);
 			root_dir.u_file[i].free = false;
+			root_dir.no_files++;
 			break;
 		}
 	}
@@ -78,6 +79,7 @@ void dir_remove_file(file_struct file) {
 	//free file
 	for(i=0; i<MAX_FILES_PER_DIRECTORY; i++){
 		if(root_dir.u_file[i].inode_number == file.inode_number){
+			root_dir.no_files--;
 			root_dir.u_file[i].free = true;
 		}
 	}

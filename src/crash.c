@@ -1,4 +1,5 @@
 #include "crash.h"
+#include "sb.h"
 
 void init_crasher()
 {
@@ -24,6 +25,7 @@ int crash_write(int vdisk, const void * buf, int num_bytes)
 		return write(vdisk, buf, num_bytes);
 	} else {
 		pthread_mutex_unlock(&(crash_mutex));
+		fprintf(stderr, "SUPERBLOCK: %i\n", sb.clean_shutdown);
 		fprintf(stderr, "CRASH!!!!!\n");
 		exit(-1);
 	}
