@@ -6,7 +6,6 @@
 #include "blocks.h"
 #include "inode.h"
 
-
 int compute_inode_loc(int inode_number) {
 	int whichInodeBlock;
 	int whichInodeInBlock;
@@ -24,6 +23,7 @@ int write_inode(int inode_number, inode * in) {
 	inodeLocation = compute_inode_loc(inode_number);
   	in->last_modified = time(NULL);
 	lseek(virtual_disk, inodeLocation, SEEK_SET);
+
 	crash_write(virtual_disk, in, sizeof(inode));
   
 	sync();

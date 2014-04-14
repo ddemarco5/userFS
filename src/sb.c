@@ -20,6 +20,8 @@ int superblockMatchesCode() {
 void init_superblock(int diskSizeBytes) {
 	sb.disk_size_blocks  = diskSizeBytes/BLOCK_SIZE_BYTES;
 	sb.num_free_blocks = u_quota();
+	
+	//changed temporarily because this clean_shutdown thing doesn't work correctly
 	sb.clean_shutdown = 1;
 
 	sb.size_of_super_block = sizeof(superblock);

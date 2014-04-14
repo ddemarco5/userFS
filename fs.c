@@ -266,8 +266,13 @@ static int fs_write(const char * path, const char * buf, size_t buff_size, off_t
 		//beyond end of inode
 		inode.no_blocks++;
 		blockindex = inode.no_blocks - 1;
-		inode.blocks[blockindex] = find_free_block();
-		//TODO check find_free_block != -1
+		int freeblock = find_free_block();
+		if(freeblock != -1)
+			inode.blocks[blockindex] = find_free_block();
+		else {
+			printf("Error in find_free_block.\n");
+			return -1;
+			}
 	}
 	int freeblock = inode.blocks[blockindex];
 	
@@ -302,7 +307,7 @@ static int fs_truncate(const char * path, off_t offset) {
 	int fh;
 	int startblock;
 	DISK_LBA current_block;
-	
+	printf("FSTRUNCATE CALLED!!!!!!!!!!!!!!!!!!!!!!!!!");
 	file_struct file;
 	assert(find_file(path, &file));
 	return 0;
@@ -440,6 +445,7 @@ int main(int argc, char **argv)
 	recover_file_system(disk);
 	//We are not clean
 	sb.clean_shutdown = 0;
+	write(virtual_disk, &sb, sizeof(superblock));
 	
 	if (!disable_crash) {
 		init_crasher();

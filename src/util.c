@@ -120,9 +120,55 @@ int u_format(int diskSizeBytes, char* file_name)
 }
 
 
-//TODO This is where you recover your filesystem from an unclean shutdown
+//This is where you recover your filesystem from an unclean shutdown
 int u_fsck() {
-	return 0;
+	int i;
+	
+	bool allocated_inodes[MAX_INODES];
+	bool allocated_blocks[sb.disk_size_blocks];
+	
+	//initialize the allocated_inodes array.
+	for(i=0; i<MAX_INODES; i++) allocated_inodes[i]=false;
+	//initialize the allocated_blocks array.
+	for(i=0; i<sb.disk_size_blocks; i++) allocated_blocks[i]=false;
+	
+	
+	inode inode_to_check;
+	for(i=0;root_dir.no_files;i++){
+		read_inode(root_dir.u_file[i].inode_number, &inode_to_check);
+		if(inode_to_check.free){
+			fprintf(stderr, "File '%s' has lost it's inode. Deleting.\n'", root_dir.u_file[i].file_name);
+			dir_remove_file(root_dir.u_file[i]);
+		}
+		else{
+			printf("Inode found, saving blocks.\n");
+			allocated_inodes[root_dir.u_file[i].inode_number] = true;
+			int j;
+			for(j=0;j<inode_to_check.no_blocks; i++)
+				allocated_blocks[inode_to_check.blocks[j]] = true;
+		}
+	}
+	//free up everything that isn't marked as allocated to remove orphaned blocks and inodes
+	for(i=0;i<MAX_INODES;i++){
+		if(!allocated_inodes[i]){
+			inode inodetofree;
+			read_inode(i, &inodetofree);
+			inodetofree.free = true;
+			write_inode(i, &inodetofree);
+		}
+		else printf("Inode %i is allocated\n", i);
+	}
+	
+	for(i=0; i<sb.disk_size_blocks; i++){
+		if(!allocated_blocks[i]){
+			free_block(i);
+		}
+		else printf("Block %i is allocated\n", i);
+	}
+	
+	write_bitmap();
+	
+	return 1;
 }
 
 /*
@@ -167,8 +213,9 @@ int u_clean_shutdown()
 {
 	/* write code for cleanly shutting down the file system
 	   return 1 for success, 0 for failure */
-  
+	printf("CLEAN SHUTDOWN CALLED\n");
 	sb.num_free_blocks = u_quota();
+	
 	sb.clean_shutdown = 1;
 
 	lseek(virtual_disk, BLOCK_SIZE_BYTES* SUPERBLOCK_BLOCK, SEEK_SET);
